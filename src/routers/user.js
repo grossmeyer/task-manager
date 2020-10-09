@@ -18,7 +18,13 @@ const upload = multer({
 })
 
 // View user profile
-router.get('/users/profile', auth, async (req, res) => res.send(req.user))
+router.get('/users/profile', auth, (req, res) => {
+    try {
+        return res.send(req.user)
+    } catch (error) {
+        res.send(error)
+    }
+})
 
 // View profile pic
 router.get('/users/:id/profile-pic', async ({ params: { id } }, res) => {
@@ -38,16 +44,6 @@ router.get('/users/:id/profile-pic', async ({ params: { id } }, res) => {
     }
 })
 
-// Upload profile pic
-router.post('/users/profile-pic', auth, upload.single('profile-pic'), async ({ file: { buffer }, user }, res) => {
-    const sharpBuffer = await sharp(buffer).resize({ width: 250, height: 250 }).png().toBuffer()
-    user.profile_pic = sharpBuffer
-    await user.save()
-    res.send()
-}, ({ message }, req, res, next) => {
-    res.status(400).send(message)
-})
-
 // Create user and login
 router.post('/users', async ({ body }, res) => {
     const user = new User(body)
@@ -65,9 +61,9 @@ router.post('/users/login', async ({ body: { email, password } }, res) => {
     try {
         const user = await User.findByCredentials(email, password)
         const token = await user.generateAuthToken()
-        res.send({ user, token })
+        res.status(201).send({ user, token })
     } catch (error) {
-        console.log(error)
+        res.status(400).send(error)
     }
 })
 
@@ -93,6 +89,16 @@ router.post('/users/logoutAll', auth, async ({ user }, res) => {
     } catch (error) {
         res.status(500).send()
     }
+})
+
+// Upload profile pic
+router.post('/users/profile-pic', auth, upload.single('profile-pic'), async ({ file: { buffer }, user }, res) => {
+    const sharpBuffer = await sharp(buffer).resize({ width: 250, height: 250 }).png().toBuffer()
+    user.profile_pic = sharpBuffer
+    await user.save()
+    res.send()
+}, ({ message }, req, res, next) => {
+    res.status(400).send(message)
 })
 
 // Update user profile data
@@ -124,7 +130,7 @@ router.patch('/users/profile', auth, async ({ user, body }, res) => {
 router.delete('/users/profile', auth, async ({ user }, res) => {
     try {
         await user.remove()
-        await sendDeleteProfileEmail(user.name, user.email)
+        // await sendDeleteProfileEmail(user.name, user.email)
         res.send(user)
     } catch (error) {
         res.status(500).send()
