@@ -8,6 +8,7 @@ const testUser1 = {
     name: 'Test User1',
     email: 'grossmeyer+testUser1@gmail.com',
     password: 'tester11',
+    id: '',
 }
 
 // Missing Required Property 'name'
@@ -35,19 +36,22 @@ const testUser5 = {
     password: 'tester55',
 }
 
-beforeAll(async () => {
+beforeEach(async () => {
     await User.deleteMany()
+    const { body: { user: { _id } } } = await request(app).post('/users')
+        .send(testUser1)
+    return testUser1.id = _id
 })
 
 test('Should successfully create a new user', async () => {
-    const { body: { user: { _id }} } = await request(app).post('/users')
-        .send(testUser1)
+    const { body: { user: { _id } } } = await request(app).post('/users')
+        .send(testUser5)
         .expect(201)
-    // Assert that db was successfully written
+    // Assert that user was successfully written to db
     const user = await User.findById(_id)
     expect(user).not.toBeNull()
     // Assert that password was not stored plaintext
-    expect(user.password).not.toBe(testUser1.password)
+    expect(user.password).not.toBe(testUser5.password)
 })
 
 test('Should reject creating user without name', async () => {
@@ -69,11 +73,11 @@ test('Should reject creating user without password', async () => {
 })
 
 test('Should successfully login an existing user', async () => {
-    const { body: { user: { _id }, token } } = await request(app).post('/users/login')
+    const { body: { token} } = await request(app).post('/users/login')
         .send(testUser1)
         .expect(201)
-    // Assert that db wrote new token and matches response token
-    const { tokens } = await User.findById(_id)
+    // Assert that response token matches token written to db
+    const { tokens } = await User.findById(testUser1.id)
     expect(tokens[1].token).toBe(token)
 })
 
@@ -96,8 +100,9 @@ test('Should reject login for bad data', async () => {
 })
 
 test('Should successfully return profile for authenticated user', async () => {
-    const { body: { token } } = await request(app).post('/users/login')
-        .send(testUser1)
+    const { tokens } = await User.findById(testUser1.id)
+    const token = tokens[0].token
+    console.log('Retrieved token is', token)
     await request(app).get('/users/profile')
         .set('Authorization', `Bearer ${token}`)
         .send()
@@ -105,11 +110,11 @@ test('Should successfully return profile for authenticated user', async () => {
 })
 
 test('Should reject profile access for valid user with expired/nonexistent token', async () => {
-    const { _id } = await User.findByCredentials(testUser1.email, testUser1.password)
     // Create a validly created token that shouldn't exist anywhere else but here
-    const token = await jwt.sign({ id: _id.toString() }, process.env.JWT_SECRET)
+    const token = jwt.sign({ id: testUser1.id, iat: Math.floor(Date.now() / 1000 + 1) }, process.env.JWT_SECRET)
+    console.log('Current token', token)
     await request(app).get('/users/profile')
-        .set('Authorization', 'Bearer', token)
+        .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(401)
 })
@@ -120,28 +125,35 @@ test('Should reject profile access for unauthenticated user', async () => {
         .expect(401)
 })
 
+test('Should upload avatar image', async () => {
+    const { tokens } = await User.findById(testUser1.id)
+    const token = tokens[0].token
+    await request(app).post('/users/profile-pic')
+        .set('Authorization', `Bearer ${token}`)
+        .attach('profile-pic', 'tests/fixtures/profile-pic.jpg')
+        .expect(200)
+    // Assert that binary data was written to db
+    const { profile_pic } = await User.findById(testUser1.id)
+    expect(profile_pic).toEqual(expect.any(Buffer))
+})
+
 test('Should successfully delete user for authenticated user', async () => {
-    const { body: { user: { _id }, token } } = await request(app).post('/users/login')
-        .send(testUser1)
+    const { tokens } = await User.findById(testUser1.id)
+    const token = tokens[0].token
     await request(app).delete('/users/profile')
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200)
-    // Assert that db was successfully written
-    const user = await User.findById(_id)
+    // Assert that user was deleted from db
+    const user = await User.findById(testUser1.id)
     expect(user).toBeNull()
-    // Recreate testUser1 for following tests
-    await request(app).post('/users')
-        .send(testUser1)
 })
 
 test('Should reject delete user request for valid user with expired/nonexistent token', async () => {
-    const { body: { user: { _id } } } = await request(app).post('/users/login')
-        .send(testUser1)
     // Create a validly created token that shouldn't exist anywhere else but here
-    const token = await jwt.sign({ id: _id.toString() }, process.env.JWT_SECRET)
+    const token = jwt.sign({ id: testUser1.id, iat: Math.floor(Date.now() / 1000 + 1) }, process.env.JWT_SECRET)
     await request(app).delete('/users/profile')
-        .set('Authorization', 'Bearer', token)
+        .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(401)
 })
