@@ -52,11 +52,6 @@ beforeEach(async () => {
     testUser1.id = _id
 })
 
-// // Cleanup
-// afterAll(async () => {
-//     await User.deleteMany()
-// })
-
 /* 
 GET request tests
 */
