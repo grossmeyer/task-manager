@@ -121,7 +121,6 @@ router.patch('/users/profile', auth, async ({ user, body }, res) => {
         }
         res.send(user)
     } catch (error) {
-        console.log('Your request could not be processed.')
         res.status(400).send(error)
     }
 })
