@@ -80,11 +80,11 @@ userSchema.methods.toJSON = function () {
 
 // ObjectID checker so mongoose is not required in the router
 // The explicit return statement is necessary
-userSchema.statics.checkId = async (id) => { 
+userSchema.statics.checkId = async (id) => {
     return mongoose.Types.ObjectId.isValid(id)
 }
 
-// User lookup static method
+// User lookup by user/pass combo
 userSchema.statics.findByCredentials = async (email, password) => {
     const errorMessage = 'Username or password was not found'
     const user = await User.findOne({ email })
@@ -96,6 +96,12 @@ userSchema.statics.findByCredentials = async (email, password) => {
         throw new Error(errorMessage)
     }
     return user
+}
+
+userSchema.statics.getBearerToken = async (id) => {
+    const { tokens } = await User.findById(id)
+    const token = tokens[0].token
+    return `Bearer ${token}`
 }
 
 // Save password as hash

@@ -17,6 +17,10 @@ const upload = multer({
     }
 })
 
+/*
+GET request routes
+*/
+
 // View user profile
 router.get('/users/profile', auth, (req, res) => {
     try {
@@ -43,6 +47,10 @@ router.get('/users/:id/profile-pic', async ({ params: { id } }, res) => {
         res.status(500).send()
     }
 })
+
+/*
+POST request routes
+*/
 
 // Create user and login
 router.post('/users', async ({ body }, res) => {
@@ -101,6 +109,10 @@ router.post('/users/profile-pic', auth, upload.single('profile-pic'), async ({ f
     res.status(400).send(message)
 })
 
+/*
+PATCH request routes
+*/
+
 // Update user profile data
 router.patch('/users/profile', auth, async ({ user, body }, res) => {
     // Create two arrays to compare entered data to valid update properties
@@ -125,11 +137,15 @@ router.patch('/users/profile', auth, async ({ user, body }, res) => {
     }
 })
 
+/*
+DELETE request routes
+*/
+
 // Remove user and associated tasks from database
 router.delete('/users/profile', auth, async ({ user }, res) => {
     try {
         await user.remove()
-        // await sendDeleteProfileEmail(user.name, user.email)
+        await sendDeleteProfileEmail(user.name, user.email)
         res.send(user)
     } catch (error) {
         res.status(500).send()
