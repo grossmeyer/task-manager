@@ -98,6 +98,7 @@ userSchema.statics.findByCredentials = async (email, password) => {
     return user
 }
 
+// Generate Bearer token string for unit tests
 userSchema.statics.getBearerToken = async (id) => {
     const { tokens } = await User.findById(id)
     const token = tokens[0].token

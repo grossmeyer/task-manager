@@ -23,12 +23,13 @@ POST request tests
 */
 
 test('Should create task for authenticated user', async () => {
-    const { body: { _id } } = await request(app).post('/tasks')
+    const { body: { _id, completed } } = await request(app).post('/tasks')
         .set('Authorization', await User.getBearerToken(testUser1.id))
         .send(testTask3)
         .expect(201)
     // Asset task was written to db
     expect(_id).not.toBeNull()
+    expect(completed).toBe(true)
 })
 
 test('Should reject create task for missing description', async () => {
@@ -45,7 +46,7 @@ test('Should reject create task for unauthenticated user', async () => {
 })
 
 /*
-POST request tests
+PATCH request tests
 */
 
 test('Should update task data for authenticated user', async () => {
