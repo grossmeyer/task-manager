@@ -5,6 +5,7 @@ const { populateDatabase, testUser1 } = require('./fixtures/db')
 
 // Missing Required Property 'name'
 const testUser2 = {
+    name: '',
     email: 'grossmeyer+testuser2@gmail.com',
     password: 'tester22',
 }
@@ -13,11 +14,13 @@ const testUser2 = {
 const testUser3 = {
     name: 'Test User3',
     password: 'tester33',
+    email: '',
 }
 
 // Missing Required Property 'password'
 const testUser4 = {
     name: 'Test User4',
+    password: '',
     email: 'grossmeyer+testuser4@gmail.com',
 }
 
@@ -27,6 +30,22 @@ const testUser5 = {
     email: 'grossmeyer+testuser5@gmail.com',
     password: 'tester55',
     age: 5,
+}
+
+// Invalid password length
+const testUser6 = {
+    name: 'Test User6',
+    email: 'grossmeyer+testuser6@gmail.com',
+    password: 'tester6',
+    age: 6,
+}
+
+// Password contains 'password'
+const testUser7 = {
+    name: 'Test User7',
+    email: 'grossmeyer+testuser7@gmail.com',
+    password: 'password77',
+    age: 7,
 }
 
 // Initialize testUser1 before each test for easy db lookups
@@ -62,6 +81,18 @@ test('Should reject creating user without email', async () => {
 test('Should reject creating user without password', async () => {
     await request(app).post('/users')
         .send(testUser4)
+        .expect(400)
+})
+
+test('Should reject creating user without password too short', async () => {
+    await request(app).post('/users')
+        .send(testUser6)
+        .expect(400)
+})
+
+test('Should reject creating user with password containing "password"', async () => {
+    await request(app).post('/users')
+        .send(testUser7)
         .expect(400)
 })
 

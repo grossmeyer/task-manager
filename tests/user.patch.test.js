@@ -3,6 +3,21 @@ const app = require('../src/app')
 const User = require('../src/models/user')
 const { populateDatabase, testUser1 } = require('./fixtures/db')
 
+// Missing Required Property 'name'
+const testUser2 = {
+    name: '',
+}
+
+// Missing Required Property 'email'
+const testUser3 = {
+    email: '',
+}
+
+// Missing Required Property 'password'
+const testUser4 = {
+    password: '',
+}
+
 // Use this for 2nd valid user tests
 const testUser5 = {
     name: 'Test User5',
@@ -15,6 +30,22 @@ const testUser5 = {
 const testUser6 = {
     homeCity: 'Boston',
     homeState: 'Massachusetts'
+}
+
+// Invalid password length
+const testUser7 = {
+    name: 'Test User7',
+    email: 'grossmeyer+testuser7@gmail.com',
+    password: 'tester7',
+    age: 7,
+}
+
+// Password contains 'password'
+const testUser8 = {
+    name: 'Test User8',
+    email: 'grossmeyer+testuser8@gmail.com',
+    password: 'password88',
+    age: 8,
 }
 
 // Initialize testUser1 before each test for easy db lookups
@@ -51,4 +82,39 @@ test('Should fail to update profile data for unauthenticated user', async () => 
     await request(app).patch('/users/profile')
         .send()
         .expect(401)
+})
+
+test('Should reject updating user without name', async () => {
+    await request(app).patch('/users/profile')
+        .set('Authorization', await User.getBearerToken(testUser1.id))
+        .send(testUser2)
+        .expect(400)
+})
+
+test('Should reject updating user without email', async () => {
+    await request(app).patch('/users/profile')
+        .set('Authorization', await User.getBearerToken(testUser1.id))
+        .send(testUser3)
+        .expect(400)
+})
+
+test('Should reject updating user without password', async () => {
+    await request(app).patch('/users/profile')
+        .set('Authorization', await User.getBearerToken(testUser1.id))
+        .send(testUser4)
+        .expect(400)
+})
+
+test('Should reject updating user without password too short', async () => {
+    await request(app).patch('/users/profile')
+        .set('Authorization', await User.getBearerToken(testUser1.id))
+        .send(testUser7)
+        .expect(400)
+})
+
+test('Should reject updating user with password containing "password"', async () => {
+    await request(app).patch('/users/profile')
+        .set('Authorization', await User.getBearerToken(testUser1.id))
+        .send(testUser8)
+        .expect(400)
 })

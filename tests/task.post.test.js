@@ -1,15 +1,14 @@
 const request = require('supertest')
 const app = require('../src/app')
 const User = require('../src/models/user')
-const Task = require('../src/models/task')
-const { populateDatabase, testUser1, testTask1 } = require('./fixtures/db')
+const { populateDatabase, testUser1 } = require('./fixtures/db')
 
 // Missing Required Property 'description'
 const testTask2 = {
     completed: false,
 }
 
-// Use this for update data and second task
+// Use this for update data
 const testTask3 = {
     description: 'Test some other Task related stuff',
     completed: true,
@@ -41,27 +40,6 @@ test('Should reject create task for missing description', async () => {
 
 test('Should reject create task for unauthenticated user', async () => {
     await request(app).post('/tasks')
-        .send(testTask3)
-        .expect(401)
-})
-
-/*
-PATCH request tests
-*/
-
-test('Should update task data for authenticated user', async () => {
-    await request(app).patch(`/tasks/${testTask1.id}`)
-        .set('Authorization', await User.getBearerToken(testUser1.id))
-        .send(testTask3)
-        .expect(200)
-    // Assert that data was written to db
-    const { description, completed } = await Task.findById(testTask1.id)
-    expect(description).toBe(testTask3.description)
-    expect(completed).toBe(testTask3.completed)
-})
-
-test('Should reject update task data for unauthenticated user', async () => {
-    await request(app).patch(`/tasks/${testTask1.id}`)
         .send(testTask3)
         .expect(401)
 })
